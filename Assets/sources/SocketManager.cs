@@ -14,6 +14,7 @@ public class SocketManager : MonoBehaviour {
         socket.On("open", Open);
         socket.On("boop", Boop);
         socket.On("match", Match);
+        socket.On("msg", Msg);
         socket.On("error", Error);
         socket.On("close", Close);
 
@@ -30,6 +31,7 @@ public class SocketManager : MonoBehaviour {
     {
         yield return new WaitForSeconds(3);
         socket.Emit("beep");
+        socket.Emit("match");
     }
 
     public void Open(SocketIOEvent e)
@@ -47,6 +49,12 @@ public class SocketManager : MonoBehaviour {
         Debug.Log("Boop received: " + e.name + " " + e.data);
         if (e.data == null) { return; }
         Debug.Log("THIS: " + e.data.GetField("this").str);
+    }
+
+    public void Msg(SocketIOEvent e)
+    {
+        Debug.Log("Msg received: " + e.name + " " + e.data);
+        Debug.Log("Message: " + e.data.GetField("message").str);
     }
 
     public void Error(SocketIOEvent e)
