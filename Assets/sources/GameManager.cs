@@ -1,4 +1,8 @@
 ﻿using UnityEngine;
+using SocketIOClient;
+using System;
+using SimpleJson;
+using System.Threading;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
@@ -18,6 +22,11 @@ public class GameManager : MonoBehaviour
     // list of cards
     private Card[] arrayCards;
 
+    public GameObject firstScreenMsg;
+
+    // client object
+    private Client client = null;
+
     void Awake()
     {
         if (instance == null)
@@ -27,41 +36,65 @@ public class GameManager : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
 
-        initBoard();
+        firstScreenMsg = Instantiate(
+            Resources.Load<GameObject>("prefabs/message_waiting"),
+            Vector3.zero,
+            Quaternion.identity
+        ) as GameObject;
+
+        connectWithServer();
+    }
+
+    public void connectWithServer()
+    {
+        client = new Client("http://143.248.233.58:3000");
+        client.Opened += onSocketOpened;
+        client.Message += onSocketGetMessage;
+        client.SocketConnectionClosed += onSocketConnectionClosed;
+        client.Error += onSocketError;
+
+        client.Connect();
+    }
+
+    // invoked when the socket opened
+    private void onSocketOpened(object sender, EventArgs e)
+    {
+        Debug.Log("onSocketOpened");
+        Destroy(firstScreenMsg);
+        firstScreenMsg = Instantiate(
+            Resources.Load<GameObject>("prefabs/message_completed"),
+            Vector3.zero,
+            Quaternion.identity
+        ) as GameObject;
+    }
+
+    // invoked when the socket gets message
+    private void onSocketGetMessage(object sender, MessageEventArgs e)
+    {
+        Debug.Log("onSocketGetMessage");
+        if (e != null && e.Message.Event == "message")
+        {
+            dynamic data = e.Message.Json.GetArgsAs<dynamic>();
+            /* TODO: json parsing */
+        }
+    }
+
+    // invoked when the socket connection is closed
+    private void onSocketConnectionClosed(object sender, EventArgs e)
+    {
+        Debug.Log("onSocketConnectionClosed");
+
+    }
+
+    // invoked when the socket gets an error
+    private void onSocketError(object sender, ErrorEventArgs e)
+    {
+        Debug.Log("onSocketError: " + e.Message);
     }
 
     public void initBoard()
     {
-        Debug.Log("initBoard start");
-        cardHolder = new GameObject("Board").transform;
 
-        List<Vector3> listPositions = new List<Vector3>();
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                listPositions.Add(new Vector3(j - (float)(cols - 1) / 2.0f, i - (float)(rows - 1) / 2.0f, 0f) * 2.5f);
-            }
-        }
-
-        arrayCards = new Card[rows * cols];
-        for (int i = 0; i < rows * cols; i++)
-        {
-            int randomPos = Random.Range(0, listPositions.Count);
-            Vector3 cardPosition = listPositions[randomPos];
-            listPositions.RemoveAt(randomPos);
-
-            GameObject cardInstance = Instantiate(
-                card.gameObject,
-                cardPosition,
-                Quaternion.identity
-            ) as GameObject;
-            arrayCards[i] = cardInstance.GetComponent<Card>();
-            arrayCards[i].m_val = i / 4 + 1;
-            arrayCards[i].m_shape = (Card.Shape)(i % 4);
-
-            Debug.Log(Card.cardToString(arrayCards[i].m_val, arrayCards[i].m_shape));
-        }
     }
 
     public void Update()
@@ -70,24 +103,6 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Application.Quit();
-        }
-
-        List<Card> openCards = new List<Card>();
-
-        foreach (Card card in arrayCards)
-        {
-            if (card.facingFront)
-            {
-                openCards.Add(card);
-            }
-        }
-
-        if (openCards.Count == 2)
-        {
-        }
-        if (openCards.Count >= 2)
-        {
-
         }
     }
 }
