@@ -29,8 +29,7 @@ public class SocketManager : MonoBehaviour {
 
     private IEnumerator BeepBop()
     {
-        yield return new WaitForSeconds(3);
-        socket.Emit("beep");
+        yield return new WaitForSeconds(1);
         socket.Emit("match");
     }
 
@@ -41,7 +40,7 @@ public class SocketManager : MonoBehaviour {
 
     public void Match(SocketIOEvent e)
     {
-        Debug.Log("Open recieved: " + e.name + " " + e.data);
+        Debug.Log("Match recieved: " + e.name + " " + e.data);
     }
 
     public void Boop(SocketIOEvent e)
