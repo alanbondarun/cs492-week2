@@ -42,9 +42,9 @@ public class GameManager : MonoBehaviour
             Quaternion.identity
         ) as GameObject;
 
-        connectWithServer();
+        //connectWithServer();
     }
-
+    /*
     public void connectWithServer()
     {
         client = new Client("http://143.248.233.58:3000");
@@ -75,7 +75,7 @@ public class GameManager : MonoBehaviour
         if (e != null && e.Message.Event == "message")
         {
             dynamic data = e.Message.Json.GetArgsAs<dynamic>();
-            /* TODO: json parsing */
+            // TODO: json parsing 
         }
     }
 
@@ -91,6 +91,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("onSocketError: " + e.Message);
     }
+    */
 
     public void initBoard()
     {
