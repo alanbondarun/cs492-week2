@@ -148,11 +148,13 @@ function playGame(room, roomKey)
 
 	p1.on('turn', function()
 	{
+		console.log("turn received");
 		handleTurn(game);
 	});
 
 	p2.on('turn', function()
 	{
+		console.log("turn received");
 		handleTurn(game);
 	});
 
@@ -160,7 +162,7 @@ function playGame(room, roomKey)
 	{
 		handleRiver(game);
 	});
-	p2.on('turn', function()
+	p2.on('river', function()
 	{
 		handleRiver(game);
 	});
@@ -193,6 +195,7 @@ function handleTurn(game)
 	if (!game.turnReceived)
 	{
 		var card = game.deck.pop();
+		game.common.push(card);
 		io.sockets.in(game.roomKey).emit('turn', { cards: [card] });
 		game.turnReceived = true;
 	}
@@ -203,6 +206,7 @@ function handleRiver(game)
 	if (!game.riverReceived)
 	{
 		var card = game.deck.pop();
+		game.common.push(card);
 		io.sockets.in(game.roomKey).emit('river', { cards: [card] });
 		game.riverReceived = true;
 	}
