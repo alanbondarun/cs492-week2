@@ -23,7 +23,6 @@ public class SocketManager : MonoBehaviour {
         socket = go.GetComponent<SocketIOComponent>();
 
         socket.On("open", Open);
-        //socket.On("boop", Boop);
         socket.On("match", Match);
         socket.On("deal", Deal);
         socket.On("bet", Bet);
@@ -154,6 +153,7 @@ public class SocketManager : MonoBehaviour {
         bool win = false;
         e.data.GetField(ref win, "win");
         Debug.Log("Did you won? : " + win.ToString());
+        gameMananger.showResult(win);
 
         string cardString = e.data.GetField("cards").ToString();
 
