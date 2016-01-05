@@ -1,23 +1,25 @@
 ﻿using UnityEngine;
 using SocketIOClient;
 using System;
-using SimpleJson;
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 public class GameManager : MonoBehaviour
 {
     /* singleton instance */
     public static GameManager instance = null;
 
-    // A variable to store a reference to the transform of our Board object.
-    private Transform cardHolder;
-
     public int rows = 4;
     public int cols = 4;
 
     // a card prefab
     public GameObject card;
+
+    public GameObject firstScreenMsg = null;
+
+    // A variable to store a reference to the transform of our Board object.
+    private Transform cardHolder;
 
     // list of the player's cards
     private Card[] arrayPlayerCards;
@@ -27,11 +29,6 @@ public class GameManager : MonoBehaviour
 
     // list of the common cards
     private Card[] arrayCommonCards;
-
-    public GameObject firstScreenMsg = null;
-
-    // client object
-    private Client client = null;
 
     void Awake()
     {
@@ -73,6 +70,40 @@ public class GameManager : MonoBehaviour
         {
             string objName = "CommonCard" + (i + 1);
             arrayCommonCards[i] = GameObject.Find(objName).GetComponent<Card>();
+        }
+    }
+
+    public void flipCard(string whichCard, int number, string shape)
+    {
+        if (whichCard.StartsWith("Player"))
+        {
+            int idx = Int32.Parse(whichCard.Substring("Player".Length));
+            if (idx >= 0 && idx < 2)
+            {
+                arrayPlayerCards[idx].m_val = number;
+                arrayPlayerCards[idx].m_shape = Card.getShapeFromString(shape);
+                arrayPlayerCards[idx].Flip();
+            }
+        }
+        else if (whichCard.StartsWith("Opponent"))
+        {
+            int idx = Int32.Parse(whichCard.Substring("Opponent".Length));
+            if (idx >= 0 && idx < 2)
+            {
+                arrayOpponentCards[idx].m_val = number;
+                arrayOpponentCards[idx].m_shape = Card.getShapeFromString(shape);
+                arrayOpponentCards[idx].Flip();
+            }
+        }
+        else if (whichCard.StartsWith("Common"))
+        {
+            int idx = Int32.Parse(whichCard.Substring("Common".Length));
+            if (idx >= 0 && idx < 5)
+            {
+                arrayCommonCards[idx].m_val = number;
+                arrayCommonCards[idx].m_shape = Card.getShapeFromString(shape);
+                arrayCommonCards[idx].Flip();
+            }
         }
     }
 

@@ -79,4 +79,21 @@ public class Card : MonoBehaviour
         bool shape2IsRed = (shape2 == Shape.Diamond) || (shape2 == Shape.Heart);
         return shape1IsRed == shape2IsRed;
     }
+
+    public static Shape getShapeFromString(string str)
+    {
+        Shape shape = Shape.Club;
+        switch (str)
+        {
+            case "Club": case "club":
+                return Shape.Club;
+            case "Diamond": case "diamond":
+                return Shape.Diamond;
+            case "Heart": case "heart":
+                return Shape.Heart;
+            case "Spade": case "spade":
+                return Shape.Spade;
+        }
+        return shape;
+    }
 }
