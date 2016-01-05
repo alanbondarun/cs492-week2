@@ -42,9 +42,9 @@ public class Card : MonoBehaviour
         }
     }
 
-    void OnMouseUp()
+    public void Flip()
     {
-        facingFront = true;
+        facingFront = !facingFront;
     }
 
     public static string cardToString(int val, Shape shape)

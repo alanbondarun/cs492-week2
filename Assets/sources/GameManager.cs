@@ -19,10 +19,16 @@ public class GameManager : MonoBehaviour
     // a card prefab
     public GameObject card;
 
-    // list of cards
-    private Card[] arrayCards;
+    // list of the player's cards
+    private Card[] arrayPlayerCards;
 
-    public GameObject firstScreenMsg;
+    // list of the opponent's cards
+    private Card[] arrayOpponentCards;
+
+    // list of the common cards
+    private Card[] arrayCommonCards;
+
+    public GameObject firstScreenMsg = null;
 
     // client object
     private Client client = null;
@@ -41,61 +47,33 @@ public class GameManager : MonoBehaviour
             Vector3.zero,
             Quaternion.identity
         ) as GameObject;
-
-        //connectWithServer();
     }
-    /*
-    public void connectWithServer()
-    {
-        client = new Client("http://143.248.233.58:3000");
-        client.Opened += onSocketOpened;
-        client.Message += onSocketGetMessage;
-        client.SocketConnectionClosed += onSocketConnectionClosed;
-        client.Error += onSocketError;
-
-        client.Connect();
-    }
-
-    // invoked when the socket opened
-    private void onSocketOpened(object sender, EventArgs e)
-    {
-        Debug.Log("onSocketOpened");
-        Destroy(firstScreenMsg);
-        firstScreenMsg = Instantiate(
-            Resources.Load<GameObject>("prefabs/message_completed"),
-            Vector3.zero,
-            Quaternion.identity
-        ) as GameObject;
-    }
-
-    // invoked when the socket gets message
-    private void onSocketGetMessage(object sender, MessageEventArgs e)
-    {
-        Debug.Log("onSocketGetMessage");
-        if (e != null && e.Message.Event == "message")
-        {
-            dynamic data = e.Message.Json.GetArgsAs<dynamic>();
-            // TODO: json parsing 
-        }
-    }
-
-    // invoked when the socket connection is closed
-    private void onSocketConnectionClosed(object sender, EventArgs e)
-    {
-        Debug.Log("onSocketConnectionClosed");
-
-    }
-
-    // invoked when the socket gets an error
-    private void onSocketError(object sender, ErrorEventArgs e)
-    {
-        Debug.Log("onSocketError: " + e.Message);
-    }
-    */
 
     public void initBoard()
     {
+        if (firstScreenMsg != null)
+        {
+            Destroy(firstScreenMsg);
+            firstScreenMsg = null;
+        }
 
+        GameObject.Find("UICanvas").SetActive(true);
+        GameObject.Find("CardGroup").SetActive(true);
+
+        arrayPlayerCards = new Card[2];
+        arrayPlayerCards[0] = GameObject.Find("PlayerCard1").GetComponent<Card>();
+        arrayPlayerCards[1] = GameObject.Find("PlayerCard2").GetComponent<Card>();
+
+        arrayOpponentCards = new Card[2];
+        arrayOpponentCards[0] = GameObject.Find("OpponentCard1").GetComponent<Card>();
+        arrayOpponentCards[1] = GameObject.Find("OpponentCard2").GetComponent<Card>();
+
+        arrayCommonCards = new Card[5];
+        for (int i=0; i<5; i++)
+        {
+            string objName = "CommonCard" + (i + 1);
+            arrayCommonCards[i] = GameObject.Find(objName).GetComponent<Card>();
+        }
     }
 
     public void Update()
