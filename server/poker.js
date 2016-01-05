@@ -180,9 +180,9 @@ function handleFlop(game)
 {
 	if (!game.flopReceived)
 	{
-		game.common.push(deck.pop());
-		game.common.push(deck.pop());
-		game.common.push(deck.pop());
+		game.common.push(game.deck.pop());
+		game.common.push(game.deck.pop());
+		game.common.push(game.deck.pop());
 		io.sockets.in(game.roomKey).emit('flop', { cards: game.common });
 		game.flopReceived = true;
 	}
