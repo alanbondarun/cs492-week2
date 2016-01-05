@@ -180,4 +180,9 @@ public class SocketManager : MonoBehaviour {
     {
         socket.Emit("fold");
     }
+
+    public void sendFlop()
+    {
+        socket.Emit("flop");
+    }
 }
