@@ -59,7 +59,7 @@ public class SocketManager : MonoBehaviour {
         if (isFound)
         {
             StopCoroutine("TryMatch");
-            gameMananger.initBoard();
+            gameMananger.activateMainGame();
         }
     }
 
@@ -68,16 +68,8 @@ public class SocketManager : MonoBehaviour {
         Debug.Log("Deal recieved: " + e.name + " " + e.data);
 
         string cardString = e.data.GetField("cards").ToString();
-        Debug.Log("cardString = " + cardString);
 
         List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
-
-        Debug.Log("#cards = " + listCards.Count);
-        foreach (JsonCard c in listCards)
-        {
-            Debug.Log("   number = " + c.number + ", shape = " + c.shape);
-        }
-
         if (listCards.Count == 2)
         {
             for (int i=0; i<2; i++)
@@ -94,21 +86,64 @@ public class SocketManager : MonoBehaviour {
     public void Bet(SocketIOEvent e)
     {
         Debug.Log("Bet recieved: " + e.name + " " + e.data);
+
+        int amount = 0;
+        e.data.GetField(ref amount, "amount");
+        gameMananger.updateOpponentBet(amount);
     }
 
     public void Flop(SocketIOEvent e)
     {
         Debug.Log("Flop recieved: " + e.name + " " + e.data);
+
+        string cardString = e.data.GetField("cards").ToString();
+
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
+        if (listCards.Count == 3)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                gameMananger.flipCard(
+                    "Common" + i.ToString(),
+                    listCards[i].number,
+                    listCards[i].shape
+                );
+            }
+        }
     }
 
     public void Turn(SocketIOEvent e)
     {
         Debug.Log("Turn recieved: " + e.name + " " + e.data);
+
+        string cardString = e.data.GetField("cards").ToString();
+
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
+        if (listCards.Count == 1)
+        {
+            gameMananger.flipCard(
+                "Player3",
+                listCards[0].number,
+                listCards[0].shape
+            );
+        }
     }
 
     public void River(SocketIOEvent e)
     {
         Debug.Log("River recieved: " + e.name + " " + e.data);
+
+        string cardString = e.data.GetField("cards").ToString();
+
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
+        if (listCards.Count == 1)
+        {
+            gameMananger.flipCard(
+                "Player4",
+                listCards[0].number,
+                listCards[0].shape
+            );
+        }
     }
     /*
         public void Boop(SocketIOEvent e)
