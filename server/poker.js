@@ -9,10 +9,7 @@ roomid = 0;
 io.on('connection', function(socket){
 	console.log("new connection: " + socket.id);
 	socket.emit('msg', {message: 'you are connected to server'});
-	
-	socket.on('beep', function(){
-		socket.emit('boop', {this : 'thisString', that: 'thatString'});
-	});
+
 
 	socket.on('match', function(){
 		var rooms = io.sockets.adapter.rooms;
@@ -34,25 +31,11 @@ io.on('connection', function(socket){
 				return;
 			}
 		}
-		/*
-		for (var room in rooms)
-		{
-			console.log("inspecting ");
-			if (Object.keys(room).length == 1)
-			{
-				socket.join(room);
-				io.sockets.in(room).emit('match', {found: true});
-				io.sockets.in(room).emit('msg', {message: "match found in the room " + roomid.toString()});
-				roomid += 1;
-				playGame(room, roomid-1);
-				return;
-			}
-		}
-		*/
 		socket.join(roomid.toString());
 		socket.emit('match', {found: false});
 		socket.emit('msg', {message: "waiting in the room " + roomid.toString()});
 	});
+
 
 	socket.on('disconnect', function(){
 		var socketRooms = socket.rooms;
@@ -60,10 +43,12 @@ io.on('connection', function(socket){
 		{
 			socket.leave(key);
 			io.sockets.in(key.emit('disconnect'));
-			var clients = io.sockets.adapter.rooms.sockets;
-			for (var client in clients)
+
+			var room = io.sockets.adapter.rooms[key];
+
+			for (var clientid in Object.keys(room))
 			{
-				client.leave(key);
+				io.sockets.connected[clientid].leave(key);
 			}
 		}
 	});
@@ -138,26 +123,19 @@ function playGame(room, roomKey)
 	p1.on('flop', function()
 	{
 		handleFlop(game);
-		
 	});
-
 	p2.on('flop', function()
 	{
 		handleFlop(game);
 	});
-
 	p1.on('turn', function()
 	{
-		console.log("turn received");
 		handleTurn(game);
 	});
-
 	p2.on('turn', function()
 	{
-		console.log("turn received");
 		handleTurn(game);
 	});
-
 	p1.on('river', function()
 	{
 		handleRiver(game);
@@ -166,7 +144,6 @@ function playGame(room, roomKey)
 	{
 		handleRiver(game);
 	});
-
 	p1.on('result', function()
 	{
 		handleResult(game);
@@ -175,6 +152,10 @@ function playGame(room, roomKey)
 	{
 		handleResult(game);
 	});
+}
+
+function handleBet(game, data)
+{
 
 }
 
@@ -209,6 +190,7 @@ function handleRiver(game)
 		game.common.push(card);
 		io.sockets.in(game.roomKey).emit('river', { cards: [card] });
 		game.riverReceived = true;
+		handleResult(game);
 	}
 }
 
@@ -216,8 +198,22 @@ function handleResult(game)
 {
 	if (!game.resultReceived)
 	{
-		game.p1.emit('result', {win : true, cards: game.p2hand});
-		game.p2.emit('result', {win : true, cards: game.p1hand});
+		var matchresult = p1wins(game);
+		if (matchresult == 1)
+		{
+			game.p1.emit('result', {win : true, cards: game.p2hand});
+			game.p2.emit('result', {win : false, cards: game.p1hand});
+		}
+		else if (matchresult == -1)
+		{
+			game.p1.emit('result', {win : false, cards: game.p2hand});
+			game.p2.emit('result', {win : true, cards: game.p1hand});
+		}
+		else
+		{
+			game.p1.emit('result', {win : false, cards: game.p2hand});
+			game.p2.emit('result', {win : false, cards: game.p1hand});	
+		}
 		game.resultReceived = true;
 	}
 }
@@ -245,4 +241,215 @@ function shuffle(array)
 		array[i] = t;
 	}
 	
+}
+
+function p1wins(game)
+{
+	var p1cards = game.p1hand.concat(game.common);
+	var p2cards = game.p2hand.concat(game.common);
+	var p1point = calculatePoint(p1cards, game.p1hand);
+	var p2point = calculatePoint(p2cards, game.p2hand);
+	console.log("p1's score : " + p1point.toString());
+	console.log("p2's score : " + p2point.toString());
+	if (p1point > p2point)
+	{
+		return 1;
+	}
+	if (p1point == p2point)
+	{
+		return 0;
+	}
+	return -1;
+}
+
+function calculatePoint(cards, hand)
+{
+	var topinhand = higher(hand[0].number, hand[1].number);
+
+	topcard = {number : 0};
+	if (findStraightFlush(cards, topcard))
+	{
+		return 800 + topcard.number*2 + topinhand;
+	}
+	if (isPair(4, cards, topcard))
+	{
+		return 700 + topcard.number*2 + topinhand;
+	}
+	if (isFullHouse(cards, topcard))
+	{
+		return 600 + topcard.number*2 + topinhand;
+	}
+	if (isFlush(cards))
+	{
+		return 500 + topinhand;
+	}
+	if (isStraight(cards, topcard))
+	{
+		return 400 + topcard.number*2 + topinhand;
+	}
+	if (isPair(3, cards, topcard))
+	{
+		return 300 + topcard.number*2 + topinhand;
+	}
+	if (isTwoPair(cards, topcard))
+	{
+		return 200 + topcard.number*2 + topinhand;
+	}
+	if (isPair(2, cards, topcard))
+	{
+		return 100 + topcard.number*2 + topinhand;
+	}
+	return topinhand;
+}
+
+function findStraightFlush(cards, topcard)
+{
+	if (isFlush(cards) && isStraight(cards, topcard))
+	{
+		return true;
+	}
+	return false;
+}
+
+function isFullHouse(cards, topcard)
+{
+	if (isPair(3, cards, topcard) && isPair(2, cards, {}))
+	{
+		return true;
+	}
+	return false;
+}
+
+function isFlush(cards)
+{
+	if (countShape(cards, "Heart") >= 5)
+	{
+		return true;
+	}
+	if (countShape(cards, "Spade") >= 5)
+	{
+		return true;
+	}
+
+	if (countShape(cards, "Club") >= 5)
+	{
+		return true;
+	}
+	if (countShape(cards, "Diamond") >= 5)
+	{
+		return true;
+	}
+	return false;
+}
+
+function countShape(cards, shape)
+{
+	var count = 0;
+	for (var i = 0; i > cards.length; i++)
+	{
+		if (cards[i].shape == shape)
+		{
+			count++;
+		}
+	} 
+	return count;
+}
+
+function isStraight(cards, topcard)
+{
+	for (var x = 14; x > 4; x--)
+	{
+		if (find(cards, x)
+			&& find(cards, x-1)
+			&& find(cards, x-2)
+			&& find(cards, x-3)
+			&& find(cards, x-4))
+		{
+			topcard.number = x;
+			return true;
+		}
+	}
+	return false;
+}
+
+function find(cards, num)
+{
+	var target = num;
+	if (num == 14)
+	{
+		target = 1;
+	}
+	for (var i = 0; i < cards.length; i++)
+	{
+		if (cards[i].number == target)
+			return true;
+	}
+	return false;
+}
+
+function isPair(num, cards, topcard)
+{
+	var found = false;
+	var max = 0;
+	for (var i = 0; i< cards.length; i++)
+	{
+		var x = cards[i].number;
+		var count = 0
+		for (var j = 0; j < cards.length; j++)
+		{
+			if (x == cards[j].number)
+			{
+				count += 1;
+			}
+		}
+		if (count == num)
+		{
+			found = true;
+			max = higher(x, max);
+		}
+	}
+	if (found)
+	{
+		topcard.number = max;
+		return true;
+	}
+	return false;
+}
+
+function higher(x, y)
+{
+	if (x == 1 || y == 1)
+		return 14;
+	return Math.max(x, y);
+}
+
+function isTwoPair(cards, topcard)
+{
+	var pairs = 0;
+	var topNum = 0;
+	
+	if (!isPair(2, cards, topcard))
+	{
+		return false;
+	}
+	if (isPair)
+
+	for (var i = 0; i< cards.length; i++)
+	{
+		var x = cards[i].number;
+		if (x == topcard.number) {continue;}
+		var count = 0
+		for (var j = 0; j < cards.length; j++)
+		{
+			if (x == cards[j].number)
+			{
+				count += 1;
+			}
+		}
+		if (count == 2)
+		{
+			return true;
+		}
+	}
+	return false;
 }
