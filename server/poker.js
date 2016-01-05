@@ -77,8 +77,6 @@ function playGame(room, roomKey)
 	var id2 = players[1];
 	console.log(id1);
 	console.log(id2);
-	io.to(p1).emit('msg', {message : "you are player 1"});
-	io.to(p2).emit('msg', {message : "you are player 2"});
 
 	var p1 = io.sockets.connected[id1];
 	var p2 = io.sockets.connected[id2];
@@ -87,17 +85,11 @@ function playGame(room, roomKey)
 
 	var deck = [];
 	setupDeck(deck);
-	//deal cards
+
+	//initial card deal
+
 	p1.emit('deal', {cards : [deck.pop(), deck.pop()]});
 	p2.emit('deal', {cards : [deck.pop(), deck.pop()]});
-
-	p1.on('fold', function(){
-		p2.emit('fold');
-	});
-
-	p2.on('fold', function(){
-		p1.emit('fold');
-	});
 
 	var p1sum = 0;
 	var p2sum = 0;
@@ -105,22 +97,30 @@ function playGame(room, roomKey)
 	var turnReceived = false;
 	var riverReceived = false;
 
+	p1.on('fold', function(){
+		p2.emit('fold');
+	});
+	p2.on('fold', function(){
+		p1.emit('fold');
+	});
+	
 	p1.on('bet', function(data){
-		var p1bet = data[amount];
-		cosole.log("player1 raised bet from " + p1sum + " to " + p1bet + ".");
+		var p1bet = data['amount'];
+		console.log("player1 raised bet from " + p1sum + " to " + p1bet + ".");
 		if (p1bet < p1sum)
 		{
+			console.log("error : new bet cannot be lower!");
 			//handle negative bet
 		}
 		p2.emit('bet', {amount: p1bet});
 		p1sum = p1bet;
 	});
-	
 	p2.on('bet', function(data){
-		var p2bet = data[amount];
-		cosole.log("player2 raised bet from " + p2sum + " to " + p2bet + ".");
+		var p2bet = data['amount'];
+		console.log("player2 raised bet from " + p2sum + " to " + p2bet + ".");
 		if (p2bet < p2sum)
 		{
+			console.log("error : new bet cannot be lower!");
 			//handle negative bet
 		}
 		p1.emit('bet', {amount: p2bet});
@@ -135,8 +135,48 @@ function playGame(room, roomKey)
 			flopReceived = true;
 		}
 	});
+	p2.on('flop', function()
+	{
+		if (!flopReceived)
+		{
+			io.sockets.in(roomKey).emit('flop', { cards: [ deck.pop(), deck.pop(), deck.pop() ] });
+			flopReceived = true;
+		}
+	});
 
+	p1.on('turn', function()
+	{
+		if (!turnReceived)
+		{
+			io.sockets.in(roomKey).emit('turn', { cards: [ deck.pop()] });
+			turnReceived = true;
+		}
+	});
+	p2.on('turn', function()
+	{
+		if (!turnReceived)
+		{
+			io.sockets.in(roomKey).emit('turn', { cards: [ deck.pop()] });
+			turnReceived = true;
+		}
+	});
 
+	p1.on('river', function()
+	{
+		if (!riverReceived)
+		{
+			io.sockets.in(roomKey).emit('river', { cards: [ deck.pop()] });
+			riverReceived = true;
+		}
+	});
+	p2.on('turn', function()
+	{
+		if (!turnReceived)
+		{
+			io.sockets.in(roomKey).emit('river', { cards: [ deck.pop()] });
+			riverReceived = true;
+		}
+	});
 }
 
 function setupDeck(deck)
