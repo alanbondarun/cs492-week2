@@ -66,7 +66,21 @@ public class SocketManager : MonoBehaviour {
     {
         Debug.Log("Deal recieved: " + e.name + " " + e.data);
 
-        
+        string cardInfo = String.Empty;
+        e.data.GetField(ref cardInfo, "cards");
+
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardInfo);
+        if (listCards.Count == 2)
+        {
+            for (int i=0; i<2; i++)
+            {
+                gameMananger.flipCard(
+                    "Player" + (i+1).ToString(),
+                    listCards[i].number,
+                    listCards[i].shape
+                );
+            }
+        }
     }
 
     public void Bet(SocketIOEvent e)
