@@ -12,7 +12,11 @@ public class Card : MonoBehaviour
         Spade
     };
     public Shape m_shape;
-    public bool facingFront = false;
+    public bool facingFront
+    {
+        get;
+        private set;
+    }
 
     public Sprite backSprite;
     public Dictionary<string, Sprite> dictCardSprites = new Dictionary<string, Sprite>();

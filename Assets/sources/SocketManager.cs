@@ -30,6 +30,7 @@ public class SocketManager : MonoBehaviour {
         socket.On("flop", Flop);
         socket.On("turn", Turn);
         socket.On("river", River);
+        socket.On("result", Result);
         socket.On("msg", Msg);
         socket.On("error", Error);
         socket.On("close", Close);
@@ -122,7 +123,7 @@ public class SocketManager : MonoBehaviour {
         if (listCards.Count == 1)
         {
             gameMananger.flipCard(
-                "Player3",
+                "Common3",
                 listCards[0].number,
                 listCards[0].shape
             );
@@ -139,20 +140,37 @@ public class SocketManager : MonoBehaviour {
         if (listCards.Count == 1)
         {
             gameMananger.flipCard(
-                "Player4",
+                "Common4",
                 listCards[0].number,
                 listCards[0].shape
             );
         }
     }
-    /*
-        public void Boop(SocketIOEvent e)
+
+    public void Result(SocketIOEvent e)
+    {
+        Debug.Log("Result recieved: " + e.name + " " + e.data);
+
+        bool win = false;
+        e.data.GetField(ref win, "win");
+        Debug.Log("Did you won? : " + win.ToString());
+
+        string cardString = e.data.GetField("cards").ToString();
+
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
+        if (listCards.Count == 2)
         {
-            Debug.Log("Boop received: " + e.name + " " + e.data);
-            if (e.data == null) { return; }
-            Debug.Log("THIS: " + e.data.GetField("this").str);
+            for (int i = 0; i < 2; i++)
+            {
+                gameMananger.flipCard(
+                    "Opponent" + i.ToString(),
+                    listCards[i].number,
+                    listCards[i].shape
+                );
+            }
         }
-    */
+    }
+
     public void Msg(SocketIOEvent e)
     {
         Debug.Log("Msg received: " + e.name + " " + e.data);
@@ -181,8 +199,29 @@ public class SocketManager : MonoBehaviour {
         socket.Emit("fold");
     }
 
-    public void sendFlop()
+    public enum CardRequest
     {
-        socket.Emit("flop");
+        REQ_FLOP,
+        REQ_TURN,
+        REQ_RIVER,
+        REQ_RESULT
+    }
+    public void sendRequest(CardRequest request)
+    {
+        switch (request)
+        {
+            case CardRequest.REQ_FLOP:
+                socket.Emit("flop");
+                break;
+            case CardRequest.REQ_TURN:
+                socket.Emit("turn");
+                break;
+            case CardRequest.REQ_RIVER:
+                socket.Emit("river");
+                break;
+            case CardRequest.REQ_RESULT:
+                socket.Emit("result");
+                break;
+        }
     }
 }
