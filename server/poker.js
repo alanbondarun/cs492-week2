@@ -88,8 +88,8 @@ function playGame(room, roomKey)
 	var deck = [];
 	setupDeck(deck);
 	//deal cards
-	p1.emit('deal', {cards : [{number : 1, shape: "Heart"},{number : 2, shape: "Spade"}]});
-	p2.emit('deal', {cards : [{number : 3, shape: "Club"},{number : 4, shape: "Diamond"}]});
+	p1.emit('deal', {cards : [deck.pop(), deck.pop()]});
+	p2.emit('deal', {cards : [deck.pop(), deck.pop()]});
 
 	p1.on('fold', function(){
 		p2.emit('fold');
@@ -99,19 +99,43 @@ function playGame(room, roomKey)
 		p1.emit('fold');
 	});
 
+	var p1sum = 0;
+	var p2sum = 0;
+	var flopReceived = false;
+	var turnReceived = false;
+	var riverReceived = false;
+
 	p1.on('bet', function(data){
 		var p1bet = data[amount];
+		cosole.log("player1 raised bet from " + p1sum + " to " + p1bet + ".");
+		if (p1bet < p1sum)
+		{
+			//handle negative bet
+		}
 		p2.emit('bet', {amount: p1bet});
+		p1sum = p1bet;
 	});
+	
 	p2.on('bet', function(data){
 		var p2bet = data[amount];
+		cosole.log("player2 raised bet from " + p2sum + " to " + p2bet + ".");
+		if (p2bet < p2sum)
+		{
+			//handle negative bet
+		}
 		p1.emit('bet', {amount: p2bet});
+		p2sum = p2bet;
 	});
-}
 
-function drawCard(deck)
-{
-	int i = Math.floor((Math.random()*deck.length));
+	p1.on('flop', function()
+	{
+		if (!flopReceived)
+		{
+			io.sockets.in(roomKey).emit('flop', { cards: [ deck.pop(), deck.pop(), deck.pop() ] });
+			flopReceived = true;
+		}
+	});
+
 
 }
 
@@ -124,4 +148,18 @@ function setupDeck(deck)
 		deck.push({number: i, shape: "Club"});
 		deck.push({number: i, shape: "Diamond"});		
 	}
+	shuffle(deck);
+}
+
+function shuffle(array)
+{
+	var m = array.length, t, i;
+	while (m)
+	{
+		i = Math.floor(Math.random() * m--);
+		t = array[m];
+		array[m] = array[i];
+		array[i] = t;
+	}
+	
 }
