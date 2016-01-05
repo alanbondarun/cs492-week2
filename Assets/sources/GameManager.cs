@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using SocketIOClient;
 using System;
-using System.Threading;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
 
 public class GameManager : MonoBehaviour
 {
@@ -30,6 +28,12 @@ public class GameManager : MonoBehaviour
     // list of the common cards
     private Card[] arrayCommonCards;
 
+    private Text txtOpponentBet = null;
+    private Text txtPlayerBet = null;
+    private InputField inpBetAmount = null;
+
+    private SocketManager socketManager = null;
+
     void Awake()
     {
         if (instance == null)
@@ -39,23 +43,16 @@ public class GameManager : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
 
+        initBoard();
+    }
+
+    public void initBoard()
+    {
         firstScreenMsg = Instantiate(
             Resources.Load<GameObject>("prefabs/message_waiting"),
             Vector3.zero,
             Quaternion.identity
         ) as GameObject;
-    }
-
-    public void initBoard()
-    {
-        if (firstScreenMsg != null)
-        {
-            Destroy(firstScreenMsg);
-            firstScreenMsg = null;
-        }
-
-        GameObject.Find("UICanvas").SetActive(true);
-        GameObject.Find("CardGroup").SetActive(true);
 
         arrayPlayerCards = new Card[2];
         arrayPlayerCards[0] = GameObject.Find("PlayerCard1").GetComponent<Card>();
@@ -71,6 +68,24 @@ public class GameManager : MonoBehaviour
             string objName = "CommonCard" + (i + 1);
             arrayCommonCards[i] = GameObject.Find(objName).GetComponent<Card>();
         }
+
+        txtOpponentBet = GameObject.Find("txtOpponentBet").GetComponent<Text>();
+        txtPlayerBet = GameObject.Find("txtPlayerBet").GetComponent<Text>();
+        inpBetAmount = GameObject.Find("inpBetAmount").GetComponent<InputField>();
+
+        socketManager = GameObject.Find("SocketManager").GetComponent<SocketManager>();
+    }
+
+    public void activateMainGame()
+    {
+        if (firstScreenMsg != null)
+        {
+            Destroy(firstScreenMsg);
+            firstScreenMsg = null;
+        }
+
+        GameObject.Find("UICanvas").SetActive(true);
+        GameObject.Find("CardGroup").SetActive(true);
     }
 
     public void flipCard(string whichCard, int number, string shape)
@@ -107,12 +122,39 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void raisePlayerBet()
+    {
+        updatePlayerBet(Int32.Parse(inpBetAmount.text));
+    }
+
+    public void callPlayerBet()
+    {
+        int addValue = Int32.Parse(txtOpponentBet.text) - Int32.Parse(txtPlayerBet.text);
+        updatePlayerBet(addValue);
+    }
+
+    public void updateOpponentBet(int value)
+    {
+        txtOpponentBet.text = value.ToString();
+    }
+
     public void Update()
     {
         /* react to inputs */
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Application.Quit();
+        }
+    }
+
+    private void updatePlayerBet(int addValue)
+    {
+        if (addValue > 0)
+        {
+            int currentBet = Int32.Parse(txtPlayerBet.text);
+            currentBet += addValue;
+            txtPlayerBet.text = currentBet.ToString();
+            socketManager.sendBet(currentBet);
         }
     }
 }
