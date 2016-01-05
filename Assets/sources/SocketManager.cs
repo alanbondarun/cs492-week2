@@ -66,10 +66,17 @@ public class SocketManager : MonoBehaviour {
     {
         Debug.Log("Deal recieved: " + e.name + " " + e.data);
 
-        string cardInfo = String.Empty;
-        e.data.GetField(ref cardInfo, "cards");
+        string cardString = e.data.GetField("cards").ToString();
+        Debug.Log("cardString = " + cardString);
 
-        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardInfo);
+        List<JsonCard> listCards = JsonConvert.DeserializeObject<List<JsonCard>>(cardString);
+
+        Debug.Log("#cards = " + listCards.Count);
+        foreach (JsonCard c in listCards)
+        {
+            Debug.Log("   number = " + c.number + ", shape = " + c.shape);
+        }
+
         if (listCards.Count == 2)
         {
             for (int i=0; i<2; i++)
