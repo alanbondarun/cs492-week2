@@ -75,27 +75,35 @@ function playGame(room, roomKey)
 	console.log(players);
 	var id1 = players[0];
 	var id2 = players[1];
-	console.log(id1);
-	console.log(id2);
 
-	var p1 = io.sockets.connected[id1];
-	var p2 = io.sockets.connected[id2];
+	var game = {};
+
+	game.roomKey = roomKey;
+
+	game.p1 = io.sockets.connected[id1];
+	game.p2 = io.sockets.connected[id2];
+	var p1 = game.p1;
+	var p2 = game.p2;
+
 	p1.emit('msg', {message : "again, you are player 1"});
 	p2.emit('msg', {message : "again, you are player 2"});
 
-	var deck = [];
-	setupDeck(deck);
+	game.deck = [];
+	setupDeck(game.deck);
 
 	//initial card deal
+	game.p1hand = [game.deck.pop(), game.deck.pop()];
+	game.p2hand = [game.deck.pop(), game.deck.pop()];
+	game.common = []
+	p1.emit('deal', {cards: game.p1hand});
+	p2.emit('deal', {cards: game.p2hand});
 
-	p1.emit('deal', {cards : [deck.pop(), deck.pop()]});
-	p2.emit('deal', {cards : [deck.pop(), deck.pop()]});
-
-	var p1sum = 0;
-	var p2sum = 0;
-	var flopReceived = false;
-	var turnReceived = false;
-	var riverReceived = false;
+	game.p1sum = 0;
+	game.p2sum = 0;
+	game.flopReceived = false;
+	game.turnReceived = false;
+	game.riverReceived = false;
+	game.resultReceived = false;
 
 	p1.on('fold', function(){
 		p2.emit('fold');
@@ -106,77 +114,108 @@ function playGame(room, roomKey)
 	
 	p1.on('bet', function(data){
 		var p1bet = data['amount'];
-		console.log("player1 raised bet from " + p1sum + " to " + p1bet + ".");
-		if (p1bet < p1sum)
+		console.log("player1 raised bet from " + game.p1sum + " to " + p1bet + ".");
+		if (p1bet < game.p1sum)
 		{
 			console.log("error : new bet cannot be lower!");
 			//handle negative bet
 		}
 		p2.emit('bet', {amount: p1bet});
-		p1sum = p1bet;
+		game.p1sum = p1bet;
 	});
 	p2.on('bet', function(data){
 		var p2bet = data['amount'];
-		console.log("player2 raised bet from " + p2sum + " to " + p2bet + ".");
-		if (p2bet < p2sum)
+		console.log("player1 raised bet from " + game.p2sum + " to " + p2bet + ".");
+		if (p2bet < game.p2sum)
 		{
 			console.log("error : new bet cannot be lower!");
 			//handle negative bet
 		}
 		p1.emit('bet', {amount: p2bet});
-		p2sum = p2bet;
+		game.p2sum = p2bet;
 	});
 
 	p1.on('flop', function()
 	{
-		if (!flopReceived)
-		{
-			io.sockets.in(roomKey).emit('flop', { cards: [ deck.pop(), deck.pop(), deck.pop() ] });
-			flopReceived = true;
-		}
+		handleFlop(game);
+		
 	});
+
 	p2.on('flop', function()
 	{
-		if (!flopReceived)
-		{
-			io.sockets.in(roomKey).emit('flop', { cards: [ deck.pop(), deck.pop(), deck.pop() ] });
-			flopReceived = true;
-		}
+		handleFlop(game);
 	});
 
 	p1.on('turn', function()
 	{
-		if (!turnReceived)
-		{
-			io.sockets.in(roomKey).emit('turn', { cards: [ deck.pop()] });
-			turnReceived = true;
-		}
+		handleTurn(game);
 	});
+
 	p2.on('turn', function()
 	{
-		if (!turnReceived)
-		{
-			io.sockets.in(roomKey).emit('turn', { cards: [ deck.pop()] });
-			turnReceived = true;
-		}
+		handleTurn(game);
 	});
 
 	p1.on('river', function()
 	{
-		if (!riverReceived)
-		{
-			io.sockets.in(roomKey).emit('river', { cards: [ deck.pop()] });
-			riverReceived = true;
-		}
+		handleRiver(game);
 	});
 	p2.on('turn', function()
 	{
-		if (!turnReceived)
-		{
-			io.sockets.in(roomKey).emit('river', { cards: [ deck.pop()] });
-			riverReceived = true;
-		}
+		handleRiver(game);
 	});
+
+	p1.on('result', function()
+	{
+		handleResult(game);
+	});
+	p2.on('result', function()
+	{
+		handleResult(game);
+	});
+
+}
+
+function handleFlop(game)
+{
+	if (!game.flopReceived)
+	{
+		game.common.push(deck.pop());
+		game.common.push(deck.pop());
+		game.common.push(deck.pop());
+		io.sockets.in(game.roomKey).emit('flop', { cards: game.common });
+		game.flopReceived = true;
+	}
+}
+
+function handleTurn(game)
+{
+	if (!game.turnReceived)
+	{
+		var card = game.deck.pop();
+		io.sockets.in(game.roomKey).emit('turn', { cards: [card] });
+		game.turnReceived = true;
+	}
+}
+
+function handleRiver(game)
+{
+	if (!game.riverReceived)
+	{
+		var card = game.deck.pop();
+		io.sockets.in(game.roomKey).emit('river', { cards: [card] });
+		game.riverReceived = true;
+	}
+}
+
+function handleResult(game)
+{
+	if (!game.resultReceived)
+	{
+		game.p1.emit('result', {win : true, cards: game.p2hand});
+		game.p2.emit('result', {win : true, cards: game.p1hand});
+		game.resultReceived = true;
+	}
 }
 
 function setupDeck(deck)
