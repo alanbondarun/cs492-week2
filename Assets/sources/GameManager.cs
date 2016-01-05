@@ -46,6 +46,15 @@ public class GameManager : MonoBehaviour
         initBoard();
     }
 
+    public void Update()
+    {
+        /* react to inputs */
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
+    }
+
     public void initBoard()
     {
         firstScreenMsg = Instantiate(
@@ -138,15 +147,6 @@ public class GameManager : MonoBehaviour
         txtOpponentBet.text = value.ToString();
     }
 
-    public void Update()
-    {
-        /* react to inputs */
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Application.Quit();
-        }
-    }
-
     private void updatePlayerBet(int addValue)
     {
         if (addValue > 0)
@@ -158,7 +158,31 @@ public class GameManager : MonoBehaviour
 
             if (currentBet == Int32.Parse(txtOpponentBet.text))
             {
-                socketManager.sendFlop();
+                int floppedCommonCards = 0;
+                foreach (Card c in arrayCommonCards)
+                {
+                    if (c.facingFront)
+                    {
+                        floppedCommonCards++;
+                    }
+                }
+
+                if (floppedCommonCards < 3)
+                {
+                    socketManager.sendRequest(SocketManager.CardRequest.REQ_FLOP);
+                }
+                else if(floppedCommonCards == 3)
+                {
+                    socketManager.sendRequest(SocketManager.CardRequest.REQ_TURN);
+                }
+                else if (floppedCommonCards == 4)
+                {
+                    socketManager.sendRequest(SocketManager.CardRequest.REQ_RIVER);
+                }
+                else
+                {
+                    socketManager.sendRequest(SocketManager.CardRequest.REQ_RESULT);
+                }
             }
         }
     }
