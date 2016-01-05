@@ -155,6 +155,11 @@ public class GameManager : MonoBehaviour
             currentBet += addValue;
             txtPlayerBet.text = currentBet.ToString();
             socketManager.sendBet(currentBet);
+
+            if (currentBet == Int32.Parse(txtOpponentBet.text))
+            {
+                socketManager.sendFlop();
+            }
         }
     }
 }
