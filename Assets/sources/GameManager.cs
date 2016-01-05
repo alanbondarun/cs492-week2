@@ -37,6 +37,9 @@ public class GameManager : MonoBehaviour
 
     private GameObject msgResult = null;
 
+    private GameObject UICanvas = null;
+    private GameObject cardGroup = null;
+
     private bool isWon = false;
 
     void Awake()
@@ -69,6 +72,11 @@ public class GameManager : MonoBehaviour
         ) as GameObject;
         
         socketManager = GameObject.Find("SocketManager").GetComponent<SocketManager>();
+
+        UICanvas = GameObject.Find("UICanvas");
+        cardGroup = GameObject.Find("CardGroup");
+        UICanvas.SetActive(false);
+        cardGroup.SetActive(false);
     }
 
     public void activateMainGame()
@@ -79,8 +87,8 @@ public class GameManager : MonoBehaviour
             firstScreenMsg = null;
         }
 
-        GameObject.Find("UICanvas").SetActive(true);
-        GameObject.Find("CardGroup").SetActive(true);
+        UICanvas.SetActive(true);
+        cardGroup.SetActive(true);
 
         arrayPlayerCards = new Card[2];
         arrayPlayerCards[0] = GameObject.Find("PlayerCard1").GetComponent<Card>();
