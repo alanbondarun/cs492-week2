@@ -30,7 +30,7 @@ io.on('connection', function(socket){
 				io.sockets.in(roomKey).emit('match', {found: true});
 				io.sockets.in(roomKey).emit('msg', {message: "match found in the room " + roomKey});
 				roomid += 1;
-				playGame(rooms[roomKey]);
+				playGame(rooms[roomKey], roomKey);
 				return;
 			}
 		}
@@ -69,7 +69,7 @@ io.on('connection', function(socket){
 	});
 });
 
-function playGame(room)
+function playGame(room, roomKey)
 {
 	var players = Object.keys(room);
 	console.log(players);
@@ -84,4 +84,44 @@ function playGame(room)
 	var p2 = io.sockets.connected[id2];
 	p1.emit('msg', {message : "again, you are player 1"});
 	p2.emit('msg', {message : "again, you are player 2"});
+
+	var deck = [];
+	setupDeck(deck);
+	//deal cards
+	p1.emit('deal', {cards : [{number : 1, shape: "Heart"},{number : 2, shape: "Spade"}]});
+	p2.emit('deal', {cards : [{number : 3, shape: "Club"},{number : 4, shape: "Diamond"}]});
+
+	p1.on('fold', function(){
+		p2.emit('fold');
+	});
+
+	p2.on('fold', function(){
+		p1.emit('fold');
+	});
+
+	p1.on('bet', function(data){
+		var p1bet = data[amount];
+		p2.emit('bet', {amount: p1bet});
+	});
+	p2.on('bet', function(data){
+		var p2bet = data[amount];
+		p1.emit('bet', {amount: p2bet});
+	});
+}
+
+function drawCard(deck)
+{
+	int i = Math.floor((Math.random()*deck.length));
+
+}
+
+function setupDeck(deck)
+{
+	for (var i = 1; i < 14; i++)
+	{
+		deck.push({number: i, shape: "Heart"});
+		deck.push({number: i, shape: "Spade"});
+		deck.push({number: i, shape: "Club"});
+		deck.push({number: i, shape: "Diamond"});		
+	}
 }
